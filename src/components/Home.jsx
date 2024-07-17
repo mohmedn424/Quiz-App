@@ -1,11 +1,16 @@
 import { useAsyncEffect } from 'ahooks';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import pb from '../../lib/pocketbase';
 import { Tag } from 'antd';
 
+// needs refactoring it sucks
+
 function Home() {
   const [scores, setScores] = useState({});
+
+  const [user, setUser] = useState({});
+
   const [totalScore, setTotalScore] = useState(0);
 
   useAsyncEffect(async () => {
@@ -13,9 +18,13 @@ function Home() {
       .collection('users')
       .getOne(pb.authStore.model.id);
 
-    if (record) setScores(record.scores);
+    if (record) {
+      setUser(record);
+      setScores(record.scores);
+    }
 
     pb.collection('users').subscribe(record.id, function (e) {
+      setUser(e.record);
       setScores(e.record.scores);
       Object.keys(e.record.scores).length === 0
         ? setTotalScore(0)
@@ -25,41 +34,30 @@ function Home() {
             )
           );
     });
-
-    Object.keys(scores).length === 0
-      ? setTotalScore(0)
-      : setTotalScore(
-          Object.values(scores).reduce(
-            (total, currentElement) => total + currentElement
-          )
-        );
   }, []);
+
+  useEffect(() => {
+    if (Object.keys(user).length > 0)
+      Object.keys(user?.scores).length === 0
+        ? setTotalScore(0)
+        : setTotalScore(
+            Object.values(user.scores).reduce(
+              (total, currentElement) => total + currentElement
+            )
+          );
+  }, [user]);
 
   return (
     <div className="home">
       <div className="intro-box">
         <div className="intro-texts">
-          <h1 className="intro-title">مبادرة الثانوية العامة</h1>
-          <h5 className="intro-description">اختر الاختبار</h5>
-
-          {/* <Tag
-            color="red"
-            style={{
-              display: 'block',
-              margin: 0,
-              fontSize: '14px',
-              marginTop: 10,
-              width: '30vw',
-              textWrap: 'wrap',
-              textAlign: 'center',
-              justifySelf: 'end',
-            }}
-          >
-            ملحوظة: الاختبار يتم فتحه مرة واحدة فقط
-          </Tag> */}
+          <h1 className="intro-title">Quiz App</h1>
+          <h5 className="intro-description">
+            description for the quiz
+          </h5>
         </div>
         <div className="total">
-          <h2>اجمالي النقاط</h2>
+          <h2>Total Points</h2>
           <h1 className="total-score">{totalScore}</h1>
         </div>
       </div>
@@ -87,8 +85,8 @@ function Home() {
             </Tag>
           ) : (
             <Link className="level-link" to="/quiz/cs">
-              <span>ابدأ الاختبار</span>
               <i className="bi bi-arrow-left"></i>
+              <span>ابدأ الاختبار</span>
             </Link>
           )}
         </div>
@@ -114,8 +112,8 @@ function Home() {
             </Tag>
           ) : (
             <Link className="level-link" to="/quiz/A2">
-              <span>ابدأ الاختبار</span>
               <i className="bi bi-arrow-left"></i>
+              <span>ابدأ الاختبار</span>
             </Link>
           )}
         </div>
